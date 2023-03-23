@@ -35,4 +35,24 @@ public class ProductService {
     public ProductEntity save(ProductEntity product){
         return productJpaRepository.save(product);
     }
+
+    public List<ProductEntity> productOrderByPricePrintingName(){
+        return productJpaRepository.productOrderByPricePrintingName();
+    }
+
+    public List<ProductEntity> productWhichIsMostExpensive(){
+        return productJpaRepository.productWhichIsMostExpensive();
+    }
+
+    public List<ProductEntity> whichHasCharacter(){
+        return productJpaRepository.productWhichHasCharacter();
+    }
+
+    public List<ProductEntity> HasMonitor(){
+        return productJpaRepository.listAllHasNameMonitor();
+    }
+
+    public long productAvgPrice(){
+        return productJpaRepository.productAvgPrice();
+    }
 }

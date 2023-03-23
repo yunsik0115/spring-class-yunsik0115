@@ -54,5 +54,30 @@ public class ProductController {
         return productService.findById(id);
     }
 
+    @GetMapping("/api/products/OrderByPrice")
+    public List<ProductEntity> productOrderByPrice(){
+        return productService.productOrderByPricePrintingName();
+    }
+
+    @GetMapping("/api/products/mostExpensiveOne")
+    public List<ProductEntity> mostExpensiveOne(){
+        return productService.productWhichIsMostExpensive();
+    }
+
+    @GetMapping("/api/products/whichHasCharacter")
+    public List<ProductEntity> whichHasCharacter(){
+        return productService.whichHasCharacter();
+    }
+
+    @GetMapping("/api/products/whichHasNotStringMonitor")
+    public List<ProductEntity> whichHasStringMonitor(){
+        return productService.HasMonitor();
+    }
+
+    @GetMapping("/api/products/avgPrice")
+    public long avgPrice(){
+        return productService.productAvgPrice();
+    }
+
 
 }

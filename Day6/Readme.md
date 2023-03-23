@@ -254,3 +254,84 @@ JPA 인터페이스 내에서 구현 없이 선언만 해주면 선언한 **메�
 - 이름에 “컴”을 포함하는 상품 조회하기
 - 가장 가격이 저렴한 상품의 ‘이름만’ 조회하기
 - 상품 가격의 평균 구하기
+```java
+
+package com.jscode.day6;
+
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long> {
+  List<ProductEntity> findByName(String name);
+  List<ProductEntity> findByPrice(Long price);
+
+  @Query(value = "select productEntity "+ "from ProductEntity productEntity "+
+          "where productEntity.name = :name AND productEntity.price = :price")
+  List<ProductEntity> findByNameAndPrice(@Param("name") String name, @Param("price") Long price);
+
+    /*
+    * 전체 상품을 조회하는데, name이 모니터인 상품은 무시
+
+    가장 가격이 비싼 상품 조회하기
+
+    이름에 “컴”을 포함하는 상품 조회하기
+
+    가장 가격이 저렴한 상품의 ‘이름만’ 조회하기
+
+    상품 가격의 평균 구하기*/
+
+  // Select * FROM ProductEntity WHERE NOT name="모니터"
+  // SELECT * FROM ProductEntity ORDER BY ProductEntity.price DESC Limit 0 1
+  // SELECT * FROM ProductEntity WHERE name="*컴*"
+  // SELECT ProductEntity.name FROM ProductEntity ORDER BY ProductEntity.Price DESC
+  // SELECT AVG(ProductEntity.price) FROM ProductEntity
+
+  @Query(value = "select productEntity "+ "from ProductEntity productEntity "+
+          "WHERE NOT productEntity.name = '모니터'")
+  List<ProductEntity> listAllHasNameMonitor();
+
+
+  @Query(value = "select * from product_entity ORDER BY price desc limit 1", nativeQuery = true)
+  List<ProductEntity> productWhichIsMostExpensive();
+
+  @Query(value = "select * from product_entity ORDER BY price ASC limit 1", nativeQuery = true)
+  List<ProductEntity> productWhichIsMostCheapest();
+
+  @Query(value = "select productEntity " + "from ProductEntity productEntity "
+          + "WHERE productEntity.name LIKE '%컴%' ")
+  List<ProductEntity> productWhichHasCharacter();
+
+  @Query(value = "select productEntity.name " + "from ProductEntity productEntity "
+          + "order by productEntity.price desc")
+  List<ProductEntity> productOrderByPricePrintingName();
+
+  @Query(value = "select avg(productEntity.price) " + "from ProductEntity productEntity")
+  long productAvgPrice();
+
+  
+}
+```
+
+다음은 위 5 문제를 해결하기 위해 작성한 코드인데 몇가지 짚고 넘어가야 할 부분이 있어서 작성했다.  
+먼저 Spring Data JPA는 MYSQL쿼리문을 모두 지원하지는 않는다.  
+```LIMIT```를 이용해 가격이 가장 비싸고 싼 항목의 이름을 출력하는 과정에서 ```unexpected token : LIMIT```라는 오류가 발생했고 여러 번 검색을 거친 결과, ````nativeQuery```` 옵션을 ```True```로 설정하고 NativeQuery를 사용해줘야 했다.  
+
+일단 Native Query를 사용하면 JPA에서 아직 실행되지 않은 Commit이 실행된다고 알고 있다. (1차 캐시 플러싱)  
+해주는 이유는 객체가 DB에 업데이트가 되지 않은 상태에서 쿼리가 나가버리면, 말 그대로 반영이 안된 데이터 불일치 문제가 생기기 때문
+쿼리가 자주 나갈수록 비용이라는데 **````nativeQuery```` 옵션의 변경 없이 Data JPA만으로 Pagination을 해결할 수 밖에 없는지 궁금합니다**  
+찾아본 결과 QueryDSL을 사용하는 방식으로 해결방법을 찾은게 있던데, 아직 QueryDSL까지는 배우지 않았으니(과유불급) 여쭙겠습니다!  
+
+https://tecoble.techcourse.co.kr/post/2021-08-15-pageable/  
+찾아본 결과 ```Pageable```을 이용한 해답이 있군용!  
+```ProductJpaRepository```의 ```productWhichIsMostExpensive``` 메소드의  parameter로 ```Pageable pageable```을 주면 컨트롤러에서 Parameter로 Query 대상을 주면 비슷하게는 만들 수 있는 듯 합니다!
+
+*** 혹시라도 나중에 가능하시면 Java Lambda에 관해서 간략하게 설명해주실 수 있으실까요...?  
+솔직히 이것 저것 찾아보고는 있는데 많이 생소합니다... ```p -> {}``` 이런 구조나 ```IllegalStateException::new``` 난생 처음봅니다.
+
+
+![img_2.png](img_2.png)  
+더 쉬운 방법이 있었네요... 역시 공식 문서부터 찾아보는게 좋은 듯 합니다.
+
+이상입니다!
