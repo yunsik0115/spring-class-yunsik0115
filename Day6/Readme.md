@@ -58,7 +58,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 }
 ```
 
-이전에 김영한 선생님 강의에서는 JPA를 이용해야 했기에 Stream과 Optional, List와 HashMap Iteration 등 신경 써야 할 부분이 많았는데  
+이전에 김영한 선생님 강의에서는 JPA를 이용해야 했기에 ```Stream```과 ```Optional```, ```List```와 ```HashMap``` ```Iteration``` 등 신경 써야 할 부분이 많았는데  
 이 모든 문제들이 Spring Data JPA를 사용함으로써 말끔히 해결됐다.  
 처음부터 이걸 썼으면 바로 프로젝트로 갈 수 있었을텐데라는 생각도 한편으로는 들었지만, JPA와 JDBC 실습을 해봤기 때문에  
 ```@Query``` 애노테이션도 적절하게 활용할 수 있었으리라 생각한다.
