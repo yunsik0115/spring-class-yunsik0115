@@ -55,4 +55,5 @@ public class ProductService {
     public long productAvgPrice(){
         return productJpaRepository.productAvgPrice();
     }
+
 }

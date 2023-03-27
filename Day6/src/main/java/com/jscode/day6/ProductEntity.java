@@ -26,4 +26,15 @@ public class ProductEntity {
     public ProductEntity() {
 
     }
+
+    public ProductEntity(String name, Long price) {
+        this.name = name;
+        this.price = price;
+    }
+
+    public ProductDTO toProductDTO(){
+
+        return new ProductDTO(this.name, this.price);
+
+    }
 }
