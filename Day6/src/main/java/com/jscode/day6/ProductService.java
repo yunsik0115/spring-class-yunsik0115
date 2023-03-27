@@ -37,19 +37,19 @@ public class ProductService {
     }
 
     public List<ProductEntity> productOrderByPricePrintingName(){
-        return productJpaRepository.productOrderByPricePrintingName();
+        return productJpaRepository.findByPriceOrderPrintingName();
     }
 
     public List<ProductEntity> productWhichIsMostExpensive(){
-        return productJpaRepository.productWhichIsMostExpensive();
+        return productJpaRepository.findMostExpensiveProduct();
     }
 
     public List<ProductEntity> whichHasCharacter(){
-        return productJpaRepository.productWhichHasCharacter();
+        return productJpaRepository.findCharacterContains();
     }
 
     public List<ProductEntity> HasMonitor(){
-        return productJpaRepository.listAllHasNameMonitor();
+        return productJpaRepository.findProductContainsStringMonitor();
     }
 
     public long productAvgPrice(){

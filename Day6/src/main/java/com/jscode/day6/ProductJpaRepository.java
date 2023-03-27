@@ -32,22 +32,22 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 
     @Query(value = "select productEntity "+ "from ProductEntity productEntity "+
     "WHERE NOT productEntity.name = '모니터'")
-    List<ProductEntity> listAllHasNameMonitor();
+    List<ProductEntity> findProductContainsStringMonitor();
 
 
     @Query(value = "select * from product_entity ORDER BY price desc limit 1", nativeQuery = true)
-    List<ProductEntity> productWhichIsMostExpensive();
+    List<ProductEntity> findMostExpensiveProduct();
 
     @Query(value = "select * from product_entity ORDER BY price ASC limit 1", nativeQuery = true)
-    List<ProductEntity> productWhichIsMostCheapest();
+    List<ProductEntity> findMostCheapestProduct();
 
     @Query(value = "select productEntity " + "from ProductEntity productEntity "
     + "WHERE productEntity.name LIKE '%컴%' ")
-    List<ProductEntity> productWhichHasCharacter();
+    List<ProductEntity> findCharacterContains();
 
     @Query(value = "select productEntity.name " + "from ProductEntity productEntity "
         + "order by productEntity.price desc")
-    List<ProductEntity> productOrderByPricePrintingName();
+    List<ProductEntity> findByPriceOrderPrintingName();
 
     @Query(value = "select avg(productEntity.price) " + "from ProductEntity productEntity")
     long productAvgPrice();
