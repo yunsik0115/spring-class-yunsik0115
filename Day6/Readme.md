@@ -335,3 +335,240 @@ https://tecoble.techcourse.co.kr/post/2021-08-15-pageable/
 더 쉬운 방법이 있었네요... 역시 공식 문서부터 찾아보는게 좋은 듯 합니다.
 
 이상입니다!
+
+## 번외편
+
+![img_3.png](img_3.png)  
+
+새로운 과제를 내주셨습니다, DTO를 사용해보자는 미션과 함께 ```ProductJpaRepository```의 메소드 이름을 docs.spring.io의 이름과 맞게 통일해달라는 요구였습니다.  
+사실 DTO의 사용 목적을 잘 모르겠었습니다.  
+단순히 Data Transfer Object의 사용이 직접적인 엔티티의 반환보다 낫고, 절대 엔티티를 그대로 반환하지 말라는 이야기는 들었고  
+나중에 타 API 사용시 변경에 유연하게 대응할 수 있다는 건 알 수 있었지만, 그러면 다음 질문이 떠올랐습니다.  
+이걸, 어디서 언제 어떻게 써야하는가?  
+```ProductEntity```의 DTO로의 변환은 어디서 일어나야하고 이 업무는 ```Controller``` ```Service``` ```Repository``` 중 어디로 가야할까?  
+
+일단 제 생각은 이랬습니다.  
+Repository는 말 그대로 Data JPA를 건드는 부분이고 DB와 직접적인 Interaction이 일어나는 곳이라 이 부분은 엔티티가 담당해야하지 않을까?  
+
+근데 ```Service```와 ```Controller```는 말이 좀 달라지는 부분이 없지 않아 있었습니다.  
+일단 제가 구현한 코드는 다음과 같습니다.  
+
+먼저, DTO와 엔티티 구성을 보겠습니다.  
+
+```java
+package com.jscode.day6;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import lombok.Getter;
+
+@Table
+@Entity
+@Getter
+public class ProductEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    private String name;
+
+    @Column
+    private Long price;
+
+    public ProductEntity() {
+
+    }
+
+    public ProductEntity(String name, Long price) {
+        this.name = name;
+        this.price = price;
+    }
+
+    public ProductDTO toProductDTO(){
+
+        return new ProductDTO(this.name, this.price);
+
+    }
+}
+
+```
+
+```java
+package com.jscode.day6;
+
+import java.io.Serializable;
+import lombok.Getter;
+
+@Getter
+public class ProductDTO implements Serializable {
+
+    private String name;
+    private long price;
+
+    public ProductDTO(String name, long price) {
+        this.name = name;
+        this.price = price;
+    }
+
+    public static ProductDTO from(ProductEntity entity){
+        return new ProductDTO(entity.getName(), entity.getPrice());
+    }
+
+    public ProductEntity toProductEntity(){
+        return new ProductEntity(name, price);
+    }
+
+}
+
+```
+
+```ProductDTO```에서 ```ProductEntity```로 그리고 그 반대로 변환을 용이하게 하기 위해 객체 내에 상호 간 변환할 수 있는 메소드를 추가했습니다.  
+상호 간의 의존이 좋은지는 의문입니다, ```DTO``` 객체가 여러개 생성된다고 가정했을 때 의존이 늘어나게 된다는 단점이 있습니다.
+
+https://tecoble.techcourse.co.kr/post/2021-04-25-dto-layer-scope/
+
+작성해주신 테코블 블로그의 작성자분과 피드백 주신 분께서 어디서 어떻게 ```DTO```를 사용할 것인가에 대해 글을 작성해주셨는데,  
+결론은 정답은 없지만 여러 종류의 컨트롤러에서 서비스를 사용하기 위해서는 ```DTO```가 서비스 계층으로 들어가면 안된다는 답변을 받았습니다.
+
+![img_5.png](img_5.png)  
+
+```DTO``` 객체를 사용함으로 인해, ```Controller``` 코드도 다음과 같이 변경되었습니다.
+
+```java
+package com.jscode.day6;
+
+import java.util.ArrayList;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Slf4j
+public class ProductController {
+
+    private final ProductService productService;
+
+    public ProductController(ProductService productService){
+        this.productService = productService;
+    }
+
+    @PostMapping("/api/product")
+    public ProductDTO saveProduct(@RequestBody ProductDTO product){
+        // return productService.save(product);
+        ProductEntity productEntity = product.toProductEntity();
+        productService.save(productEntity);
+        return product;
+    }
+
+    @GetMapping("/api/products")
+    public List<ProductDTO> getAllProducts(){
+        // return productService.findAll();
+        List<ProductEntity> retrievedProducts = productService.findAll();
+        List<ProductDTO> productDTOList = getProductEntityListToDtoList(retrievedProducts);
+
+        return productDTOList;
+    }
+
+
+    // Method Extraction for Retriving and Converting to DTO from ProductEntity List -> ProductDTO List
+    private static List<ProductDTO> getProductEntityListToDtoList(List<ProductEntity> retrievedProducts) {
+        List<ProductDTO> productDTOList = new ArrayList<>();
+        for (ProductEntity retrievedProduct : retrievedProducts) {
+            productDTOList.add(retrievedProduct.toProductDTO());
+        }
+        return productDTOList;
+    }
+
+    @GetMapping("/api/product")
+    public List<ProductDTO> getProduct
+        (
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "price", required = false) Long price){
+
+        List<ProductEntity> productEntityList;
+
+        if(name != null && price != null){
+            productEntityList = productService.findByNameAndPrice(name, price);
+            return getProductEntityListToDtoList(productEntityList);
+        }
+
+        if(name != null){
+            productEntityList = productService.findByName(name);
+            return getProductEntityListToDtoList(productEntityList);
+            //return productService.findByName(name);
+        }
+
+        productEntityList = productService.findByPrice(price);
+        return getProductEntityListToDtoList(productEntityList);
+        //return productService.findByPrice(price);
+
+
+    }
+
+    @GetMapping("/api/product/getbyid")
+    public ProductDTO getProductById(
+        @RequestParam(value = "id", required = true) long id
+    ){
+        ProductEntity productEntity = productService.findById(id);
+        return productEntity.toProductDTO();
+        //return productService.findById(id);
+    }
+
+    @GetMapping("/api/products/OrderByPrice")
+    public List<ProductDTO> productOrderByPrice(){
+        List<ProductEntity> productEntityList = productService.productOrderByPricePrintingName();
+        return getProductEntityListToDtoList(productEntityList);
+        //return productService.productOrderByPricePrintingName();
+    }
+
+    @GetMapping("/api/products/mostExpensiveOne")
+    public List<ProductDTO> mostExpensiveOne(){
+        //return productService.productWhichIsMostExpensive();
+        List<ProductEntity> productEntityList = productService.productWhichIsMostExpensive();
+        return getProductEntityListToDtoList(productEntityList);
+    }
+
+    @GetMapping("/api/products/whichHasCharacter")
+    public List<ProductDTO> whichHasCharacter(){
+        List<ProductEntity> productEntityList = productService.whichHasCharacter();
+        return getProductEntityListToDtoList(productEntityList);
+        //return productService.whichHasCharacter();
+    }
+
+    @GetMapping("/api/products/whichHasNotStringMonitor")
+    public List<ProductDTO> whichHasStringMonitor(){
+        //return productService.HasMonitor();
+        List<ProductEntity> productEntityList = productService.HasMonitor();
+        return getProductEntityListToDtoList(productEntityList);
+    }
+
+
+    // 밑에 이건 DTO 사용 필요....?
+    @GetMapping("/api/products/avgPrice")
+    public long avgPrice(){
+        return productService.productAvgPrice();
+    }
+
+
+}
+
+```
+
+마지막 메서드에 서술한 바와 같이 어떤 특정 값을 불러오고자 할 때도 Object로 불러와야 하는지 의문입니다.  
+추가로, 
+```java
+List<ProductEntity> productEntityList = productService.xxx();
+return getProductEntityListToDtoList(productEntityList);
+```  
+코드의 중복이 있는데 해당 코드 또한 리팩터링을 위해서는 Adapter를 구성해줘야 할 듯 합니다.  
+그 이외에 추가적인 사항은 없었습니다! (감사합니다 :))
